@@ -1,0 +1,11 @@
+{
+  "buildCommand": null,
+  "devCommand": null,
+  "installCommand": "pip install -r requirements-vercel.txt",
+  "framework": null,
+  "outputDirectory": ".",
+  "routes": [
+    { "src": "/api/(.*)", "dest": "/api/$1" },
+    { "src": "/(.*)", "dest": "/$1" }
+  ]
+}

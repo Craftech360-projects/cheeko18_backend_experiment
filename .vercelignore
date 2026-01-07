@@ -1,0 +1,20 @@
+# Python
+venv/
+api/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+
+# Environment files
+.env
+.env.local
+
+# Development files
+server.py
+agent.py
+
+# Git
+.git/
+.gitignore

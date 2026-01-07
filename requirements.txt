@@ -1,0 +1,4 @@
+livekit-agents[google]~=1.2
+python-dotenv
+aiohttp
+aiohttp-cors

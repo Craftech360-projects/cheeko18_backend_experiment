@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CHEEKO - AI Chief of Staff</title>
+  <meta name="description" content="Talk to CHEEKO, your sophisticated AI Chief of Staff.">
+  <link rel="stylesheet" href="index.css">
+</head>
+
+<body>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo">🤵</div>
+      <h1 class="title">CHEEKO</h1>
+      <p class="subtitle">AI Chief of Staff</p>
+    </header>
+
+    <!-- Status -->
+    <div class="status-container">
+      <div class="status-dot" id="statusDot"></div>
+      <span class="status-text" id="statusText">Not connected</span>
+    </div>
+
+    <!-- Connect Button (shown when disconnected) -->
+    <button class="connect-btn" id="connectBtn">
+      🎙️ Start Talking
+    </button>
+
+    <!-- Push-to-Talk Button -->
+    <div class="ptt-container" id="pttContainer" style="display: none;">
+      <button class="ptt-button" id="pttButton" disabled>
+        <span class="ptt-icon">🎤</span>
+        <span class="ptt-label">Hold to talk</span>
+      </button>
+      <div class="wave-container">
+        <div class="wave"></div>
+        <div class="wave"></div>
+        <div class="wave"></div>
+      </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="instructions" id="instructions">
+      <p>
+        <strong>Hold down</strong> the button to talk,<br>
+        <strong>release</strong> when you're done!
+      </p>
+    </div>
+
+    <!-- Transcript -->
+    <div class="transcript-container">
+      <div class="transcript">
+        <span class="transcript-label">CHEEKO says:</span>
+        <p class="transcript-text empty" id="transcript">Waiting for connection...</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="index.js"></script>
+</body>
+
+</html>
