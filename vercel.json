@@ -1,11 +1,10 @@
 {
-  "buildCommand": null,
-  "devCommand": null,
-  "installCommand": "pip install -r requirements-vercel.txt",
-  "framework": null,
-  "outputDirectory": ".",
-  "routes": [
-    { "src": "/api/(.*)", "dest": "/api/$1" },
-    { "src": "/(.*)", "dest": "/$1" }
+  "functions": {
+    "api/token.py": {
+      "runtime": "python3.9"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/token", "destination": "/api/token.py" }
   ]
 }
