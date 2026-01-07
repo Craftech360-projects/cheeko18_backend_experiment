@@ -1,10 +1,8 @@
 {
-  "functions": {
-    "api/token.py": {
-      "runtime": "python3.9"
-    }
-  },
   "rewrites": [
-    { "source": "/api/token", "destination": "/api/token.py" }
+    {
+      "source": "/api/token",
+      "destination": "/api/token"
+    }
   ]
 }
