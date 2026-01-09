@@ -124,24 +124,37 @@ async def serve_index(request):
 
 async def get_auth_status(request):
     """Check authentication status for all spy tools services."""
-    google_connected = TOKEN_JSON_PATH.exists()
     github_connected = bool(GITHUB_TOKEN)
 
-    # If Google token exists, verify it's valid
+    # Check for Google token - either from env var or file
     google_valid = False
-    if google_connected:
+    token_source = None
+
+    # First check env var (for production)
+    google_token_env = os.getenv("GOOGLE_TOKEN_JSON")
+    if google_token_env:
+        try:
+            token_data = json.loads(google_token_env)
+            google_valid = 'token' in token_data or 'access_token' in token_data
+            token_source = "env"
+        except Exception:
+            pass
+
+    # Then check file (for local dev)
+    if not google_valid and TOKEN_JSON_PATH.exists():
         try:
             with open(TOKEN_JSON_PATH) as f:
                 token_data = json.load(f)
-                # Check if token has required fields
                 google_valid = 'token' in token_data or 'access_token' in token_data
+                token_source = "file"
         except Exception:
-            google_valid = False
+            pass
 
     return web.json_response({
         'google': {
             'connected': google_valid,
-            'hasCredentials': CREDENTIALS_JSON_PATH.exists(),
+            'hasCredentials': CREDENTIALS_JSON_PATH.exists() or bool(google_token_env),
+            'source': token_source
         },
         'github': {
             'connected': github_connected,
@@ -151,10 +164,23 @@ async def get_auth_status(request):
 
 async def start_google_oauth(request):
     """Initiate Google OAuth flow."""
+    # Check if already authorized via env var (production)
+    google_token_env = os.getenv("GOOGLE_TOKEN_JSON")
+    if google_token_env:
+        try:
+            token_data = json.loads(google_token_env)
+            if 'token' in token_data or 'access_token' in token_data:
+                return web.json_response({
+                    'success': True,
+                    'message': 'Google already authorized via environment variable!'
+                })
+        except Exception:
+            pass
+
     if not CREDENTIALS_JSON_PATH.exists():
         return web.json_response({
-            'error': 'credentials.json not found. Please set up Google OAuth credentials.',
-            'setup_url': 'https://console.cloud.google.com/apis/credentials'
+            'error': 'OAuth not available in production. Token must be set via GOOGLE_TOKEN_JSON environment variable.',
+            'hint': 'Run locally first to generate token.json, then set GOOGLE_TOKEN_JSON on Railway.'
         }, status=400)
 
     try:
