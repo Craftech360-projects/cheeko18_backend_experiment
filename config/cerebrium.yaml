@@ -1,0 +1,31 @@
+name: cheeko-agent
+python_version: "3.11"
+
+run:
+  - python agent.py
+
+env:
+  LIVEKIT_URL: ${LIVEKIT_URL}
+  LIVEKIT_API_KEY: ${LIVEKIT_API_KEY}
+  LIVEKIT_API_SECRET: ${LIVEKIT_API_SECRET}
+  GOOGLE_API_KEY: ${GOOGLE_API_KEY}
+
+compute:
+  cpu: 2
+  memory: 4.0
+  gpu_count: 0
+
+include:
+  - agent.py
+  - requirements.txt
+  - .env.local
+
+exclude:
+  - venv/
+  - __pycache__/
+  - "*.pyc"
+  - .git/
+  - index.html
+  - index.js
+  - index.css
+  - server.py

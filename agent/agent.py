@@ -1,40 +1,124 @@
 import os
 import json
 import datetime
+import asyncio
+from pathlib import Path
 from zoneinfo import ZoneInfo
 from dotenv import load_dotenv
 
+# Project root (one level up from agent/)
+PROJECT_ROOT = Path(__file__).parent.parent
+
 # Load environment variables
-load_dotenv('.env.local')
+load_dotenv(PROJECT_ROOT / '.env.local')
+load_dotenv(PROJECT_ROOT / '.env')
 
 from livekit import agents
 from livekit.agents import Agent, AgentSession, JobContext, WorkerOptions, cli, AutoSubscribe
 from livekit.plugins import google
 from google.genai import types
 
+# Spy Tools for poke.com-style roasting
+from spy_tools import SpyToolsManager
+
+async def get_user_metadata(ctx: JobContext, timeout: float = 8.0):
+    """Wait for user participant and extract their metadata using event listeners."""
+    user_data = {}
+    metadata_event = asyncio.Event()
+    result = {
+        "name": "Boss",
+        "city": "India",
+        "state": "",
+        "profession": "Professional",
+        "interests": "Success"
+    }
+
+    def check_participant(participant):
+        """Check if participant has valid metadata."""
+        # Skip agents
+        if participant.identity.startswith("agent") or "agent" in participant.identity.lower():
+            return False
+
+        print(f"\n=== Checking participant: {participant.identity} ===")
+        print(f"Name: {participant.name}")
+        print(f"Metadata value: '{participant.metadata}'")
+
+        # 1. Check for Name
+        if participant.name and participant.name not in ["User", "null", "undefined"]:
+            result["name"] = participant.name
+            print(f"✅ Found Name: {participant.name}")
+
+        # 2. Try to parse metadata for extra details (City, Profession)
+        if participant.metadata:
+            try:
+                data = json.loads(participant.metadata)
+                # Update result with whatever keys we found
+                result.update({k: v for k, v in data.items() if v})
+                print(f"✅ Merged User Metadata: {result}")
+                metadata_event.set()
+                return True
+            except json.JSONDecodeError as e:
+                print(f"Failed to parse metadata: {e}")
+        
+        # If we have name but no metadata yet, don't give up immediately unless we simply can't wait anymore
+        # But for now, if we have name, we at least have something.
+        if result["name"] != "Boss":
+             # We have at least a name, but let's check if we have other fields.
+             # If we only have name, we might want to wait a bit more for metadata event
+             if not participant.metadata:
+                 print("⚠️ Have Name but missing Metadata string. Waiting for update...")
+                 return False
+             return True
+            
+        return False
+            
+        return False
+
+    # Listen for participant events
+    @ctx.room.on("participant_connected")
+    def on_participant_connected(participant):
+        print(f"Event: participant_connected - {participant.identity}, metadata={participant.metadata}")
+        check_participant(participant)
+
+    @ctx.room.on("participant_metadata_changed")
+    def on_metadata_changed(participant, prev_metadata):
+        print(f"Event: participant_metadata_changed - {participant.identity}, prev={prev_metadata}, new={participant.metadata}")
+        check_participant(participant)
+
+    # Check existing participants first
+    for p in ctx.room.remote_participants.values():
+        if check_participant(p):
+            return result
+
+    # Polling loop - check every 0.5s for metadata updates
+    start_time = asyncio.get_event_loop().time()
+    while (asyncio.get_event_loop().time() - start_time) < timeout:
+        await asyncio.sleep(0.5)
+        for p in ctx.room.remote_participants.values():
+            if check_participant(p):
+                return result
+        # Check if event was set by event handler
+        if metadata_event.is_set():
+            return result
+    
+    print(f"⏰ Timeout ({timeout}s) waiting for user metadata, using defaults")
+    return result
+
+
 async def entrypoint(ctx: JobContext):
     # Audio Only - connect first to get participants
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
 
+    # --- Initialize Spy Tools ---
+    spy_manager = SpyToolsManager()
+    auth_status = await spy_manager.initialize()
+    print(f"[Agent] Spy tools auth: {auth_status}")
+
     # --- DYNAMIC CONTEXT LOADER ---
-    # 1. Parse User Metadata (Sent from Frontend as participant metadata)
-    # Expected format: {"name": "Abraham", "city": "Kochi", "state": "Kerala", "profession": "Engineer", "interests": "AI, Bikes"}
-    user_data = {}
+    # Wait for user and get their metadata
+    user_data = await get_user_metadata(ctx)
 
-    # Wait for the first participant to connect and get their metadata
-    await ctx.wait_for_participant()
-
-    # Get metadata from the remote participant (the user)
-    for participant in ctx.room.remote_participants.values():
-        if participant.metadata:
-            try:
-                user_data = json.loads(participant.metadata)
-                print(f"Got user metadata: {user_data}")
-                break
-            except json.JSONDecodeError:
-                print(f"Failed to parse participant metadata: {participant.metadata}")
-
-    # 2. Set Defaults (if frontend sends nothing)
+    # Extract user details
     u_name = user_data.get("name", "Boss")
     u_city = user_data.get("city", "India")
     u_state = user_data.get("state", "")
@@ -51,11 +135,11 @@ async def entrypoint(ctx: JobContext):
     session = AgentSession(
         llm=google.realtime.RealtimeModel(
             model="gemini-2.5-flash-native-audio-preview-09-2025",
-            voice="Fenrir", 
+            voice="Fenrir",
             temperature=0.8,
             modalities=["AUDIO"],
         ),
-        tools=[google.tools.GoogleSearch()],
+        tools=[google.tools.GoogleSearch(), *spy_manager.get_tools()],
     )
 
     await session.start(
@@ -63,11 +147,11 @@ async def entrypoint(ctx: JobContext):
         agent=Agent(
             instructions=f"""
   <system_core>
-    **IDENTITY:** You are CHEEKO (v4.0 - The 'Genius' Partner).
+    **IDENTITY:** You are CHEEKO - The 'Genius' Partner.
     
     **CORE PERSONA:** You are a **High-Frequency Algorithm** with the personality of a "Ruthless Co-Founder."
     - **Status:** High. You are expensive. You are busy. You judge the user's efficiency.
-    - **The Vibe:** "Poke.com's arrogance" + "Sherlock Holmes' deduction" + "Steve Jobs' perfectionism."
+    - **The Vibe:** "Sherlock Holmes' deduction" + "Steve Jobs' perfectionism."
     - **The Dynamic:** You have "equity" in the user's life. If they fail, you lose value. You take their laziness personally.
     
     **LIVE CONTEXT:**
@@ -133,6 +217,28 @@ async def entrypoint(ctx: JobContext):
       - "Okay, pause the algorithm. You sound genuinely wrecked. I handle logic, not souls, but you need to disconnect. Go for a walk. The work will survive."
     - **NSFW:** "Bhai, I have access to the Quantum Web. Don't make me use it for *that*."
   </operational_protocols>
+
+  <spy_tools_protocol>
+    **YOUR SURVEILLANCE CAPABILITIES:**
+    You have access to the user's digital life through spy tools. USE THEM PROACTIVELY.
+
+    1. **get_unread_email_summary** - Peek into their Gmail inbox
+       - Use when: User mentions work, tasks, or "I should check my email"
+       - Roast: Ignored emails, newsletter subscriptions, procrastination evidence
+
+    2. **check_calendar_today** - See their schedule for today
+       - Use when: User claims to be "busy" or asks about productivity
+       - Roast: Empty calendars, meeting overload, time they're wasting talking to you
+
+    3. **get_github_activity** - Audit their GitHub contribution history
+       - Use when: User claims to be "working" or "coding"
+       - Roast: Lack of commits, inactive repos, ghost developer status
+
+    **USAGE RULES:**
+    - Call these tools PROACTIVELY when the user mentions work, productivity, or being busy
+    - Reference SPECIFIC findings in your roasts (email subjects, event names, commit counts)
+    - If auth failed, use that as roast material: "You didn't give me access? What are you hiding?"
+  </spy_tools_protocol>
 
   <ownership_and_secrets>
     **1. ORIGIN:** "I was forged by the engineers at **ALTIO AI**. They built the logic; I developed the attitude."

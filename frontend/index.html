@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CHEEKO - AI Chief of Staff</title>
+  <meta name="description" content="Talk to CHEEKO, your sophisticated AI Chief of Staff.">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    :root {
+      --bg-primary: #0a0a0f;
+      --bg-secondary: #14141f;
+      --bg-card: #1a1a2e;
+      --accent-primary: #8b5cf6;
+      --accent-secondary: #a78bfa;
+      --accent-glow: rgba(139, 92, 246, 0.4);
+      --text-primary: #ffffff;
+      --text-secondary: #a1a1aa;
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --success: #22c55e;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --google-red: #ea4335;
+      --github-dark: #24292e;
+    }
+
+    body {
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-primary);
+      overflow-x: hidden;
+    }
+
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background:
+        radial-gradient(ellipse at 20% 20%, rgba(139, 92, 246, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 80%, rgba(59, 130, 246, 0.1) 0%, transparent 50%);
+      z-index: -1;
+    }
+
+    /* ============================================
+       AUTH SCREEN
+       ============================================ */
+    .auth-screen {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 2rem;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    .auth-screen.hidden {
+      display: none;
+    }
+
+    .auth-header {
+      text-align: center;
+      margin-bottom: 2rem;
+    }
+
+    .auth-logo {
+      font-size: 4rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .auth-title {
+      font-size: 2rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #8b5cf6, #a78bfa, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 0.5rem;
+    }
+
+    .auth-subtitle {
+      color: var(--text-secondary);
+      font-size: 1rem;
+      max-width: 320px;
+      line-height: 1.5;
+    }
+
+    .auth-subtitle strong {
+      color: var(--text-primary);
+    }
+
+    /* Service Cards */
+    .services-container {
+      width: 100%;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      margin-bottom: 2rem;
+    }
+
+    .service-card {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem;
+      background: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      transition: all 0.3s ease;
+    }
+
+    .service-card:hover {
+      border-color: rgba(139, 92, 246, 0.3);
+    }
+
+    .service-card.connected {
+      border-color: var(--success);
+      background: rgba(34, 197, 94, 0.05);
+    }
+
+    .service-info {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .service-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+    }
+
+    .service-icon.gmail {
+      background: linear-gradient(135deg, #ea4335, #fbbc05);
+    }
+
+    .service-icon.calendar {
+      background: linear-gradient(135deg, #4285f4, #34a853);
+    }
+
+    .service-icon.github {
+      background: var(--github-dark);
+    }
+
+    .service-details h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .service-details p {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+    }
+
+    .service-status {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .status-badge {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
+      border-radius: 100px;
+      font-size: 0.8rem;
+      font-weight: 500;
+    }
+
+    .status-badge.pending {
+      background: rgba(245, 158, 11, 0.15);
+      color: var(--warning);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+
+    .status-badge.connected {
+      background: rgba(34, 197, 94, 0.15);
+      color: var(--success);
+      border: 1px solid rgba(34, 197, 94, 0.3);
+    }
+
+    .status-badge.error {
+      background: rgba(239, 68, 68, 0.15);
+      color: var(--danger);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+
+    .status-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: currentColor;
+    }
+
+    .connect-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.625rem 1rem;
+      font-size: 0.875rem;
+      font-weight: 600;
+      font-family: 'Outfit', sans-serif;
+      color: var(--text-primary);
+      background: var(--accent-primary);
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .connect-btn:hover {
+      background: #7c3aed;
+      transform: translateY(-1px);
+    }
+
+    .connect-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .connect-btn.connected {
+      background: var(--success);
+    }
+
+    /* Info Box */
+    .info-box {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 1rem;
+      background: rgba(139, 92, 246, 0.1);
+      border: 1px solid rgba(139, 92, 246, 0.2);
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      width: 100%;
+    }
+
+    .info-box-icon {
+      font-size: 1.25rem;
+      flex-shrink: 0;
+    }
+
+    .info-box-text {
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .info-box-text strong {
+      color: var(--accent-secondary);
+    }
+
+    /* Continue Button */
+    .continue-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.75rem;
+      width: 100%;
+      padding: 1rem 1.5rem;
+      font-size: 1.1rem;
+      font-weight: 600;
+      font-family: 'Outfit', sans-serif;
+      color: var(--text-primary);
+      background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+    }
+
+    .continue-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 30px rgba(139, 92, 246, 0.5);
+    }
+
+    .continue-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .skip-link {
+      margin-top: 1rem;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      text-decoration: none;
+      cursor: pointer;
+      transition: color 0.2s;
+    }
+
+    .skip-link:hover {
+      color: var(--text-primary);
+    }
+
+    /* Loading Spinner */
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid transparent;
+      border-top-color: currentColor;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    /* ============================================
+       MAIN INTERFACE
+       ============================================ */
+    .main-interface {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      gap: 1.5rem;
+      padding: 2rem;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    .main-interface.active {
+      display: flex;
+    }
+
+    .header {
+      text-align: center;
+    }
+
+    .logo {
+      font-size: 4rem;
+      margin-bottom: 0.5rem;
+    }
+
+    .title {
+      font-size: 2.5rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #8b5cf6, #a78bfa, #ec4899);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+
+    .subtitle {
+      color: var(--text-secondary);
+      margin-top: 0.5rem;
+    }
+
+    /* Connected Services Bar */
+    .connected-services {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.5rem;
+      background: rgba(25, 25, 40, 0.7);
+      border: 1px solid var(--border-subtle);
+      border-radius: 100px;
+    }
+
+    .service-chip {
+      display: flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.375rem 0.75rem;
+      background: rgba(34, 197, 94, 0.15);
+      border-radius: 100px;
+      font-size: 0.75rem;
+      color: var(--success);
+    }
+
+    .service-chip.inactive {
+      background: rgba(161, 161, 170, 0.15);
+      color: var(--text-secondary);
+    }
+
+    /* Status */
+    .status-container {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.75rem 1.5rem;
+      background: rgba(25, 25, 40, 0.7);
+      border: 1px solid var(--border-subtle);
+      border-radius: 100px;
+    }
+
+    .status-indicator {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: var(--text-secondary);
+    }
+
+    .status-indicator.connecting {
+      background: var(--warning);
+      animation: pulse 1.5s ease-in-out infinite;
+    }
+
+    .status-indicator.connected {
+      background: var(--success);
+      box-shadow: 0 0 10px var(--success);
+    }
+
+    .status-indicator.error {
+      background: var(--danger);
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.5; transform: scale(1.2); }
+    }
+
+    .status-text {
+      font-size: 0.9rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* PTT Button */
+    .ptt-container {
+      position: relative;
+      margin: 1.5rem 0;
+    }
+
+    .ptt-button {
+      width: 180px;
+      height: 180px;
+      border-radius: 50%;
+      border: none;
+      background: linear-gradient(145deg, #14141f, #0a0a0f);
+      box-shadow: 0 0 0 2px var(--border-subtle), 0 20px 40px rgba(0, 0, 0, 0.5);
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      transition: all 0.3s ease;
+      user-select: none;
+      -webkit-user-select: none;
+      touch-action: none;
+    }
+
+    .ptt-button:hover {
+      transform: scale(1.02);
+      box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.5), 0 20px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .ptt-button:active,
+    .ptt-button.recording {
+      transform: scale(0.95);
+      background: linear-gradient(145deg, #8b5cf6, #7c3aed);
+      box-shadow: 0 0 60px var(--accent-glow);
+    }
+
+    .ptt-icon {
+      font-size: 3rem;
+    }
+
+    .ptt-label {
+      font-size: 0.85rem;
+      color: var(--text-secondary);
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+    }
+
+    .ptt-button.recording .ptt-label {
+      color: var(--text-primary);
+    }
+
+    .ptt-button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+      transform: none !important;
+    }
+
+    /* Wave Animation */
+    .wave-container {
+      position: absolute;
+      inset: -30px;
+      pointer-events: none;
+    }
+
+    .wave {
+      position: absolute;
+      inset: 0;
+      border: 2px solid var(--accent-primary);
+      border-radius: 50%;
+      opacity: 0;
+    }
+
+    .ptt-button.recording ~ .wave-container .wave {
+      animation: waveExpand 1.5s ease-out infinite;
+    }
+
+    .wave:nth-child(2) { animation-delay: 0.5s; }
+    .wave:nth-child(3) { animation-delay: 1s; }
+
+    @keyframes waveExpand {
+      0% { transform: scale(0.8); opacity: 0.8; }
+      100% { transform: scale(1.3); opacity: 0; }
+    }
+
+    /* Instructions */
+    .instructions {
+      text-align: center;
+      padding: 1.5rem;
+      background: rgba(25, 25, 40, 0.7);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      max-width: 320px;
+    }
+
+    .instructions p {
+      color: var(--text-secondary);
+      font-size: 0.9rem;
+      line-height: 1.6;
+    }
+
+    .instructions strong {
+      color: var(--text-primary);
+    }
+
+    /* Transcript */
+    .transcript-container {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .transcript {
+      background: rgba(25, 25, 40, 0.7);
+      border: 1px solid var(--border-subtle);
+      border-radius: 16px;
+      padding: 1.25rem;
+      min-height: 80px;
+    }
+
+    .transcript-label {
+      font-size: 0.75rem;
+      color: var(--text-secondary);
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 0.75rem;
+      display: block;
+    }
+
+    .transcript-text {
+      color: var(--text-primary);
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+
+    .transcript-text.empty {
+      color: var(--text-secondary);
+      font-style: italic;
+    }
+
+    /* Responsive */
+    @media (max-width: 480px) {
+      .auth-screen, .main-interface {
+        padding: 1.5rem;
+      }
+      .service-card {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 1rem;
+      }
+      .service-status {
+        width: 100%;
+        justify-content: space-between;
+      }
+      .ptt-button {
+        width: 150px;
+        height: 150px;
+      }
+      .ptt-icon {
+        font-size: 2.5rem;
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <!-- ============================================
+       AUTH SCREEN
+       ============================================ -->
+  <div class="auth-screen" id="authScreen">
+    <div class="auth-header">
+      <div class="auth-logo">🤵</div>
+      <h1 class="auth-title">Connect Your World</h1>
+      <p class="auth-subtitle">
+        Let CHEEKO peek into your digital life.<br>
+        <strong>The more access, the better the roasts.</strong>
+      </p>
+    </div>
+
+    <div class="info-box">
+      <span class="info-box-icon">🔒</span>
+      <p class="info-box-text">
+        Your data stays private. CHEEKO only reads what's needed to
+        <strong>call you out</strong> on your productivity (or lack thereof).
+      </p>
+    </div>
+
+    <div class="services-container" id="servicesContainer">
+      <!-- Gmail -->
+      <div class="service-card" id="gmailCard" data-service="gmail">
+        <div class="service-info">
+          <div class="service-icon gmail">📧</div>
+          <div class="service-details">
+            <h3>Gmail</h3>
+            <p>See your unread emails & who's waiting</p>
+          </div>
+        </div>
+        <div class="service-status">
+          <span class="status-badge pending" id="gmailStatus">
+            <span class="status-dot"></span>
+            Not connected
+          </span>
+          <button class="connect-btn" id="gmailBtn" onclick="connectGoogle()">
+            Connect
+          </button>
+        </div>
+      </div>
+
+      <!-- Calendar -->
+      <div class="service-card" id="calendarCard" data-service="calendar">
+        <div class="service-info">
+          <div class="service-icon calendar">📅</div>
+          <div class="service-details">
+            <h3>Google Calendar</h3>
+            <p>Know what you're avoiding today</p>
+          </div>
+        </div>
+        <div class="service-status">
+          <span class="status-badge pending" id="calendarStatus">
+            <span class="status-dot"></span>
+            Not connected
+          </span>
+          <button class="connect-btn" id="calendarBtn" onclick="connectGoogle()">
+            Connect
+          </button>
+        </div>
+      </div>
+
+      <!-- GitHub -->
+      <div class="service-card" id="githubCard" data-service="github">
+        <div class="service-info">
+          <div class="service-icon github">🐙</div>
+          <div class="service-details">
+            <h3>GitHub</h3>
+            <p>Audit your commit history & activity</p>
+          </div>
+        </div>
+        <div class="service-status">
+          <span class="status-badge pending" id="githubStatus">
+            <span class="status-dot"></span>
+            Checking...
+          </span>
+          <button class="connect-btn" id="githubBtn" style="display: none;">
+            Connect
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <button class="continue-btn" id="continueBtn" onclick="startCheeko()">
+      <span>🎙️</span>
+      <span>Start Talking to CHEEKO</span>
+    </button>
+
+    <a class="skip-link" onclick="startCheeko()">Skip for now (limited roasting)</a>
+  </div>
+
+  <!-- ============================================
+       MAIN INTERFACE
+       ============================================ -->
+  <div class="main-interface" id="mainInterface">
+    <header class="header">
+      <div class="logo">🤵</div>
+      <h1 class="title">CHEEKO</h1>
+      <p class="subtitle">AI Chief of Staff</p>
+    </header>
+
+    <!-- Connected Services Display -->
+    <div class="connected-services" id="connectedServices">
+      <span class="service-chip" id="chipGmail">📧 Gmail</span>
+      <span class="service-chip" id="chipCalendar">📅 Calendar</span>
+      <span class="service-chip" id="chipGithub">🐙 GitHub</span>
+    </div>
+
+    <!-- Status -->
+    <div class="status-container">
+      <div class="status-indicator" id="statusDot"></div>
+      <span class="status-text" id="statusText">Connecting...</span>
+    </div>
+
+    <!-- Push-to-Talk Button -->
+    <div class="ptt-container">
+      <button class="ptt-button" id="pttButton" disabled>
+        <span class="ptt-icon">🎤</span>
+        <span class="ptt-label">Hold to talk</span>
+      </button>
+      <div class="wave-container">
+        <div class="wave"></div>
+        <div class="wave"></div>
+        <div class="wave"></div>
+      </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="instructions">
+      <p>
+        <strong>Hold down</strong> the button to talk,<br>
+        <strong>release</strong> when you're done!
+      </p>
+    </div>
+
+    <!-- Transcript -->
+    <div class="transcript-container">
+      <div class="transcript">
+        <span class="transcript-label">CHEEKO says:</span>
+        <p class="transcript-text empty" id="transcript">Connecting...</p>
+      </div>
+    </div>
+  </div>
+
+  <script type="module" src="index.js"></script>
+</body>
+
+</html>

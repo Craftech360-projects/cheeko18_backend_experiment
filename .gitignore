@@ -11,6 +11,12 @@ node_modules/
 .env.*.local
 .env*.example
 
+# Google OAuth tokens (contains refresh tokens!)
+token.json
+
+# Google OAuth client secrets (NEVER commit this!)
+credentials.json
+
 # Python
 __pycache__/
 *.py[cod]
