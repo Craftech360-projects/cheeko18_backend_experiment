@@ -1,12 +1,14 @@
 # 🚀 Cheeko Deployment Information
 
-## Deployment Status: ✅ COMPLETED
+## Deployment Status: ✅ COMPLETED & FIXED
 
 ### 📦 Vercel Deployment (Frontend/Web Interface)
-- **Status**: ✅ Successfully Deployed
-- **Production URL**: https://geminilivekit-l8n7xpk59-altio-ai-private-limiteds-projects.vercel.app
-- **Inspect URL**: https://vercel.com/altio-ai-private-limiteds-projects/gemini_livekit/2nvNCtzjn7DfvUd3tX3UjXK4R9g9
+- **Status**: ✅ Successfully Deployed & Fixed
+- **Production URL**: https://geminilivekit-9h14xc0ta-altio-ai-private-limiteds-projects.vercel.app
+- **Inspect URL**: https://vercel.com/altio-ai-private-limiteds-projects/gemini_livekit/8N37KFsxVCug8eheDC8H2cCiBxUd
 - **Purpose**: Serves the web interface (HTML/CSS/JS) and token generation API
+- **API Endpoint**: `/api/token` (Fixed - now working!)
+
 
 ### 🤖 Railway Deployment (Agent Backend)
 - **Status**: ⚠️ Deployed (May need environment variable configuration)
